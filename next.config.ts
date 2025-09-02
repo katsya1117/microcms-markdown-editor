@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
+import removeImports from "next-remove-imports";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactStrictMode: true,
+  swcMinify: true,
 };
 
-export default nextConfig;
+export default removeImports()({
+  ...nextConfig,
+});

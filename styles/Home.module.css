@@ -1,0 +1,10 @@
+.container {
+  border: 1px solid #cdcde0;
+  border-radius: 4px;
+}
+
+.loading {
+  margin: 0 auto;
+  text-align: center;
+  padding: 16px;
+}
