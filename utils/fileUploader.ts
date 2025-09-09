@@ -44,7 +44,7 @@ export const fileUploader = async (file: File, dirName = "images") => {
 
       if (res.ok) {
         console.info("Uploaded successfully!");
-        return `${BUCKET_URL}/${objectName}`;
+        return `${BUCKET_URL}/${process.env.NEXT_PUBLIC_BUCKET_NAME}/${objectName}`;
       } else {
         alert("Upload failed.");
       }

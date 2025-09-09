@@ -9,7 +9,7 @@ import { onImagePasted } from "../utils/onImagePasted";
 import styles from "../styles/Home.module.css";
 import type { Root, Element } from "hast";
 
-// Markdown Editor for ReactはSSRで利用できないためdynamic importで読み込む必要がある
+// SSR非対応のため dynamic import
 const MDEditor = dynamic(import("@uiw/react-md-editor"), {
   ssr: false,
   loading: () => <div className={styles.loading}>initializing...</div>,
@@ -45,10 +45,14 @@ const IndexPage = () => {
                     ["className"],
                   ],
                   code: [["className"]],
+                  img: [
+                    ...(defaultSchema?.attributes?.img || []),
+                    ["src", "alt", "title"],
+                  ],
                 },
               },
             ],
-            // aタグに target="_blank" を付与するプラグイン
+            // aタグに target="_blank" を付与
             () => (tree: Root) => {
               visit(tree, "element", (node: Element) => {
                 if (node.tagName === "a") {
@@ -61,17 +65,33 @@ const IndexPage = () => {
         }}
         onChange={(value) => {
           setMarkdown(value);
-          sendMessage({
-            data: value,
-          });
+          sendMessage({ data: value });
         }}
         height={540}
-        textareaProps={{
-          placeholder: "Please enter Markdown text",
-        }}
+        textareaProps={{ placeholder: "Please enter Markdown text" }}
         onDrop={async (event) => {
           event.preventDefault();
-          await onImagePasted(event.dataTransfer, setMarkdown);
+          const textarea = event.currentTarget.querySelector("textarea");
+          const selectionStart = textarea?.selectionStart ?? 0;
+          const selectionEnd = textarea?.selectionEnd ?? selectionStart;
+
+          const result = await onImagePasted(
+            event.dataTransfer,
+            markdown,
+            selectionStart,
+            selectionEnd
+          );
+
+          if (result) {
+            setMarkdown(result.newMarkdown);
+            sendMessage({ data: result.newMarkdown });
+
+            // カーソル位置を反映
+            if (textarea) {
+              textarea.selectionStart = result.newCursor;
+              textarea.selectionEnd = result.newCursor;
+            }
+          }
         }}
       />
     </div>

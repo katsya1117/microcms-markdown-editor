@@ -1,31 +1,29 @@
-import type { SetStateAction } from "react";
 import { fileUploader } from "./fileUploader";
 import { insertToTextArea } from "./insertToTextArea";
 
 export const onImagePasted = async (
   dataTransfer: DataTransfer,
-  setMarkdown: (value: SetStateAction<string | undefined>) => void
-) => {
+  currentMarkdown: string | undefined,
+  selectionStart: number,
+  selectionEnd: number
+): Promise<{ newMarkdown: string; newCursor: number } | undefined> => {
   const files: File[] = [];
-  for (let index = 0; index < dataTransfer.items.length; index += 1) {
-    const file = dataTransfer.files.item(index);
-
-    if (file) {
-      files.push(file);
-    }
+  for (let i = 0; i < dataTransfer.items.length; i++) {
+    const file = dataTransfer.files.item(i);
+    if (file) files.push(file);
   }
 
-  await Promise.all(
-    files.map(async (file) => {
-      const url = await fileUploader(file);
+  let newMarkdown = currentMarkdown ?? "";
+  let newCursor = selectionStart;
 
-      if (!url) return;
+  for (const file of files) {
+    const url = await fileUploader(file);
+    if (!url) continue;
 
-      const insertedMarkdown = insertToTextArea(`![](${url})`);
+    const result = insertToTextArea(`![](${url})`, newMarkdown, newCursor, selectionEnd);
+    newMarkdown = result.newMarkdown;
+    newCursor = result.newCursor;
+  }
 
-      if (!insertedMarkdown) return;
-
-      setMarkdown(insertedMarkdown);
-    })
-  );
+  return { newMarkdown, newCursor };
 };

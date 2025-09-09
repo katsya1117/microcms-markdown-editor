@@ -1,21 +1,16 @@
-export const insertToTextArea = (insertString: string) => {
-  const textarea = document.querySelector('textarea');
-  if (!textarea) {
-    return null;
-  }
+export const insertToTextArea = (
+  insertString: string,
+  currentMarkdown: string | undefined,
+  selectionStart: number,
+  selectionEnd: number
+): { newMarkdown: string; newCursor: number } => {
+  const text = currentMarkdown ?? "";
 
-  let sentence = textarea.value;
-  const len = sentence.length;
-  const pos = textarea.selectionStart;
-  const end = textarea.selectionEnd;
+  const front = text.slice(0, selectionStart);
+  const back = text.slice(selectionEnd);
 
-  const front = sentence.slice(0, pos);
-  const back = sentence.slice(pos, len);
+  const newMarkdown = front + insertString + back;
+  const newCursor = selectionStart + insertString.length;
 
-  sentence = front + insertString + back;
-
-  textarea.value = sentence;
-  textarea.selectionEnd = end + insertString.length;
-
-  return sentence;
+  return { newMarkdown, newCursor };
 };
