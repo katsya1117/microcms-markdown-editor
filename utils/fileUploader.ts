@@ -1,55 +1,61 @@
 import cuid from "cuid";
 
-// R2
-const BUCKET_URL = process.env.NEXT_PUBLIC_R2_BUCKET_URL!;
+// R2 に許可する拡張子
+const allowExts = ["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"];
 
-//ファイル名から拡張子を取得する
+// ファイル名から拡張子を取得
 function getExt(filename: string) {
   const pos = filename.lastIndexOf(".");
   if (pos === -1) return "";
-  return filename.slice(pos + 1);
+  return filename.slice(pos + 1).toLowerCase();
 }
 
-//アップロードを許可する拡張子
-const allowExts = ["jpg", "jpeg", "png", "gif", "webp"];
-
-//アップロード予定のファイル名の拡張子が許可されているか確認する
+// 拡張子チェック
 function checkExt(filename: string) {
-  const ext = getExt(filename).toLowerCase();
-  if (allowExts.indexOf(ext) === -1) return false;
-  return true;
+  const ext = getExt(filename);
+  return allowExts.includes(ext);
 }
 
-export const fileUploader = async (file: File, dirName = "images") => {
-  try {
-    if (file) {
-      const filename = encodeURIComponent(file.name);
-      const ext = getExt(filename);
-
-      if (!checkExt(filename)) {
-        alert("画像ファイルを選択してください");
-        return;
-      }
-
-      // cuidでランダムなファイル名を生成
-      const objectName = `${dirName}/${cuid()}.${ext}`;
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("fileName", objectName);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        console.info("Uploaded successfully!");
-        return `${BUCKET_URL}/${process.env.NEXT_PUBLIC_BUCKET_NAME}/${objectName}`;
-      } else {
-        alert("Upload failed.");
-      }
-    }
-  } catch (error) {
-    alert("Upload failed.");
+// === ここがメイン ===
+// ファイルをアップロードして公開URLを返す
+export async function fileUploader(file: File): Promise<string> {
+  // 拡張子チェック
+  if (!checkExt(file.name)) {
+    throw new Error("アップロードできないファイル形式です");
   }
-};
+
+  // 安全なファイル名を生成
+  const ext = getExt(file.name);
+  const fileName = `${cuid()}.${ext}`;
+
+  // 1) APIから署名URLを取得
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileName,
+      contentType: file.type || `image/${ext}`,
+      dir: "microcms-blog/images", // ← 必要に応じて固定ディレクトリ
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("署名URLの取得に失敗しました");
+  }
+
+  const { signedUrl, publicUrl } = await res.json();
+
+  // 2) 署名付きURLへ直接PUT
+  const putRes = await fetch(signedUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type || `image/${ext}` },
+    body: file,
+  });
+
+  if (!putRes.ok) {
+    throw new Error("R2へのアップロードに失敗しました");
+  }
+
+  // 3) 公開URLを返す
+  return publicUrl;
+}
