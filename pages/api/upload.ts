@@ -1,17 +1,14 @@
-// pages/api/upload.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// --- S3Client (Cloudflare R2) 設定 ---
-const s3 = new S3Client({
+const s3Client = new S3Client({
   region: "auto",
-  endpoint: process.env.R2_ENDPOINT!, // ex: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+  endpoint: process.env.R2_ENDPOINT,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
-  forcePathStyle: true,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,37 +17,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { fileName, contentType, dir } = req.body as {
-      fileName?: string;
-      contentType?: string;
-      dir?: string;
-    };
+    const { fileName, contentType } = req.body;
 
     if (!fileName || !contentType) {
-      return res.status(400).json({ error: "Missing fileName or contentType" });
+      return res.status(400).json({ error: "Missing parameters" });
     }
 
-    // 任意のディレクトリ指定（例: "microcms-blog/images"）
-    const safeDir = dir ? dir.replace(/\/+$/, "") + "/" : "";
-    const key = `${safeDir}${fileName}`;
+    // 保存先を一律で images/ 配下にする
+    const key = `images/${fileName}`;
 
-    // PutObjectCommand に署名をつける
+    // PutObjectCommand を作成
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET!,
       Key: key,
       ContentType: contentType,
     });
 
-    // 署名URL（5分有効）
-    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 * 5 });
+    // getSignedUrl を使って署名付きURLを生成
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 60 });
 
-    // 公開アクセス用のURL
-    const base = process.env.NEXT_PUBLIC_R2_BUCKET_URL!.replace(/\/+$/, "");
-    const publicUrl = `${base}/${key}`;
+    // 公開URLを組み立て
+    const publicUrl = `${process.env.NEXT_PUBLIC_R2_BUCKET_URL}/${key}`;
 
-    return res.status(200).json({ signedUrl, key, publicUrl });
+    res.status(200).json({ signedUrl, publicUrl });
   } catch (err) {
-    console.error("upload.ts error:", err);
-    return res.status(500).json({ error: "Failed to generate signed URL" });
+    console.error("Upload error:", err);
+    res.status(500).json({ error: "Failed to create signed URL" });
   }
 }

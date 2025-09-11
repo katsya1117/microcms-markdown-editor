@@ -28,14 +28,13 @@ export async function fileUploader(file: File): Promise<string> {
   const ext = getExt(file.name);
   const fileName = `${cuid()}.${ext}`;
 
-  // 1) APIから署名URLを取得
+  // 1) APIから署名URLを取得（dir は送らない）
   const res = await fetch("/api/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       fileName,
       contentType: file.type || `image/${ext}`,
-      dir: "microcms-blog/images", // ← 必要に応じて固定ディレクトリ
     }),
   });
 
