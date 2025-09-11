@@ -16,17 +16,16 @@ const MDEditor = dynamic(import("@uiw/react-md-editor"), {
 });
 
 const IndexPage = () => {
-  const [markdown, setMarkdown] = useState<string | undefined>();
+  const [markdown, setMarkdown] = useState<string>("");
   const { data, sendMessage } = useFieldExtension("", {
     origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!,
     height: 543,
   });
 
+  // 初期値の受け取り
   useEffect(() => {
-    if (!markdown) {
-      setMarkdown(data);
-    }
-  }, [markdown, data]);
+    setMarkdown(data ?? "");
+  }, [data]);
 
   return (
     <div data-color-mode="light" className={styles.container}>
@@ -64,8 +63,9 @@ const IndexPage = () => {
           ],
         }}
         onChange={(value) => {
-          setMarkdown(value);
-          sendMessage({ data: value });
+          const safeValue = value ?? "";
+          setMarkdown(safeValue);
+          sendMessage({ data: safeValue }); // microCMS に送信
         }}
         height={540}
         textareaProps={{ placeholder: "Please enter Markdown text" }}
@@ -84,7 +84,7 @@ const IndexPage = () => {
 
           if (result) {
             setMarkdown(result.newMarkdown);
-            sendMessage({ data: result.newMarkdown });
+            sendMessage({ data: result.newMarkdown }); // microCMS に送信
 
             // カーソル位置を反映
             if (textarea) {
