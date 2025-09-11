@@ -8,7 +8,9 @@ export const onImagePasted = async (
   selectionEnd: number
 ): Promise<{ newMarkdown: string; newCursor: number } | undefined> => {
   const files: File[] = [];
-  for (let i = 0; i < dataTransfer.items.length; i++) {
+
+  // files から直接取得する
+  for (let i = 0; i < dataTransfer.files.length; i++) {
     const file = dataTransfer.files.item(i);
     if (file) files.push(file);
   }
@@ -17,12 +19,16 @@ export const onImagePasted = async (
   let newCursor = selectionStart;
 
   for (const file of files) {
-    const url = await fileUploader(file);
-    if (!url) continue;
+    try {
+      const url = await fileUploader(file);
+      if (!url) continue;
 
-    const result = insertToTextArea(`![](${url})`, newMarkdown, newCursor, selectionEnd);
-    newMarkdown = result.newMarkdown;
-    newCursor = result.newCursor;
+      const result = insertToTextArea(`![](${url})`, newMarkdown, newCursor, selectionEnd);
+      newMarkdown = result.newMarkdown;
+      newCursor = result.newCursor;
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    }
   }
 
   return { newMarkdown, newCursor };
