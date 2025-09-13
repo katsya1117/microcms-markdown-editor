@@ -18,23 +18,24 @@ const MDEditor = dynamic(import("@uiw/react-md-editor"), {
 const IndexPage = () => {
   const [markdown, setMarkdown] = useState<string>("");
 
-  // フィールドID "body" に拡張フィールドを紐づける
-  const { data, sendMessage } = useFieldExtension("body", {
-    origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!,
+  // 第1引数は「初期値」。空文字にすること。
+  //   フィールドIDは“スキーマ側で”拡張フィールドにこのURLを割り当てることで紐づきます。
+  const { data, sendMessage } = useFieldExtension<string>("", {
+    origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!, // 例: https://your-service.microcms.io
     height: 543,
   });
 
-  // 初期値を受け取る（この時点では sendMessage は呼ばない）
+  // microCMSから届いた初期値を反映（送信はしない）
   useEffect(() => {
-    if (data !== undefined) {
-      setMarkdown(data);
-    }
+    if (typeof data !== "undefined") setMarkdown(data ?? "");
   }, [data]);
 
-  // 値を更新して microCMS に送信する関数
+  // 値の更新 + microCMSへ送信（ラッパは message.data を内部で組み立てる）
   const updateValue = (value: string) => {
-    setMarkdown(value);
-    sendMessage(value); // v1.1.0 ではこれだけでOK
+    const safe = value ?? "";
+    setMarkdown(safe);
+    // ✅ 正しい形：{ data: 値 } だけ渡す（id/type/message を自前で組まない）
+    sendMessage({ data: safe }); // React版READMEの形に一致
   };
 
   return (
@@ -49,10 +50,7 @@ const IndexPage = () => {
                 ...defaultSchema,
                 attributes: {
                   ...defaultSchema.attributes,
-                  span: [
-                    ...(defaultSchema?.attributes?.span || []),
-                    ["className"],
-                  ],
+                  span: [...(defaultSchema?.attributes?.span || []), ["className"]],
                   code: [["className"]],
                   img: [
                     ...(defaultSchema?.attributes?.img || []),
@@ -61,7 +59,7 @@ const IndexPage = () => {
                 },
               },
             ],
-            // aタグに target="_blank" を付与
+            // aタグに target="_blank"
             () => (tree: Root) => {
               visit(tree, "element", (node: Element) => {
                 if (node.tagName === "a") {
@@ -72,9 +70,7 @@ const IndexPage = () => {
             },
           ],
         }}
-        onChange={(value) => {
-          updateValue(value ?? "");
-        }}
+        onChange={(v) => updateValue(v ?? "")}
         height={540}
         textareaProps={{ placeholder: "Please enter Markdown text" }}
         onDrop={async (event) => {
