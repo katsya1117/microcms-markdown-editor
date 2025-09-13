@@ -3,6 +3,17 @@ import cuid from "cuid";
 // R2 に許可する拡張子
 const allowExts = ["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"];
 
+// 拡張子 → MIME タイプのマッピング
+const mimeMap: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+};
+
 // ファイル名から拡張子を取得
 function getExt(filename: string) {
   const pos = filename.lastIndexOf(".");
@@ -28,13 +39,16 @@ export async function fileUploader(file: File): Promise<string> {
   const ext = getExt(file.name);
   const fileName = `${cuid()}.${ext}`;
 
-  // 1) APIから署名URLを取得（dir は送らない）
+  // MIME タイプを決定（file.type が空の場合はマッピングを利用）
+  const contentType = file.type || mimeMap[ext] || "application/octet-stream";
+
+  // 1) APIから署名URLを取得
   const res = await fetch("/api/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       fileName,
-      contentType: file.type || `image/${ext}`,
+      contentType,
     }),
   });
 
@@ -47,7 +61,7 @@ export async function fileUploader(file: File): Promise<string> {
   // 2) 署名付きURLへ直接PUT
   const putRes = await fetch(signedUrl, {
     method: "PUT",
-    headers: { "Content-Type": file.type || `image/${ext}` },
+    headers: { "Content-Type": contentType },
     body: file,
   });
 
