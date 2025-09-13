@@ -17,10 +17,10 @@ const MDEditor = dynamic(import("@uiw/react-md-editor"), {
 
 const IndexPage = () => {
   const [markdown, setMarkdown] = useState<string>("");
-  const { data, sendMessage } = useFieldExtension("", {
-    origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!,
-    height: 543,
-  });
+  const { data, sendMessage } = useFieldExtension("body", {
+  origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!,
+  height: 543,
+});
 
   // 初期値の受け取り
   useEffect(() => {
@@ -29,9 +29,13 @@ const IndexPage = () => {
 
   // 値を更新して microCMS に送信する関数
   const updateValue = (value: string) => {
-    setMarkdown(value);
-    sendMessage({ data: value });
-  };
+  setMarkdown(value);
+  sendMessage({
+    id: "microcms",
+    type: "MICROCMS_POST_DATA",
+    message: value,
+  });
+};
 
   return (
     <div data-color-mode="light" className={styles.container}>
