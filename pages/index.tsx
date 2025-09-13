@@ -32,10 +32,10 @@ const IndexPage = () => {
 
   // 値の更新 + microCMSへ送信（ラッパは message.data を内部で組み立てる）
   const updateValue = (value: string) => {
-    const safe = value ?? "";
-    setMarkdown(safe);
-    sendMessage({ id: "md", data: safe }); // ← これが正解
-  };
+  const safe = value ?? "";
+  setMarkdown(safe);
+  sendMessage({ id: "body", data: safe }); // ← フィールドIDと一致させる
+};
 
   useEffect(() => {
     const flush = () => {
