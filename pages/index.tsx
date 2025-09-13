@@ -21,7 +21,7 @@ const IndexPage = () => {
   // 第1引数は「初期値」。空文字にすること。
   //   フィールドIDは“スキーマ側で”拡張フィールドにこのURLを割り当てることで紐づきます。
   const { data, sendMessage } = useFieldExtension<string>("", {
-    origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!, // 例: https://your-service.microcms.io
+    origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!, // 例) https://<service-id>.microcms.io
     height: 543,
   });
 
@@ -34,9 +34,23 @@ const IndexPage = () => {
   const updateValue = (value: string) => {
     const safe = value ?? "";
     setMarkdown(safe);
-    // ✅ 正しい形：{ data: 値 } だけ渡す（id/type/message を自前で組まない）
-    sendMessage({ data: safe }); // React版READMEの形に一致
+    sendMessage({ id: "md", data: safe }); // ← これが正解
   };
+
+  useEffect(() => {
+    const flush = () => {
+      sendMessage({ id: "md", data: markdown ?? "" });
+    };
+    const onVis = () => {
+      if (document.visibilityState !== "visible") flush();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [markdown, sendMessage]);
 
   return (
     <div data-color-mode="light" className={styles.container}>
@@ -50,7 +64,10 @@ const IndexPage = () => {
                 ...defaultSchema,
                 attributes: {
                   ...defaultSchema.attributes,
-                  span: [...(defaultSchema?.attributes?.span || []), ["className"]],
+                  span: [
+                    ...(defaultSchema?.attributes?.span || []),
+                    ["className"],
+                  ],
                   code: [["className"]],
                   img: [
                     ...(defaultSchema?.attributes?.img || []),
