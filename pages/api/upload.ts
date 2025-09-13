@@ -39,6 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 公開URLを組み立て
     const publicUrl = `${process.env.NEXT_PUBLIC_R2_BUCKET_URL}/${key}`;
+    console.log("publicUrl", publicUrl);
 
     res.status(200).json({ signedUrl, publicUrl });
   } catch (err) {
