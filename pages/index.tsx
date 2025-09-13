@@ -17,25 +17,25 @@ const MDEditor = dynamic(import("@uiw/react-md-editor"), {
 
 const IndexPage = () => {
   const [markdown, setMarkdown] = useState<string>("");
-  const { data, sendMessage } = useFieldExtension("body", {
-  origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!,
-  height: 543,
-});
 
-  // 初期値の受け取り
+  // フィールドID "body" に拡張フィールドを紐づける
+  const { data, sendMessage } = useFieldExtension("body", {
+    origin: process.env.NEXT_PUBLIC_MICROCMS_ORIGIN!,
+    height: 543,
+  });
+
+  // 初期値を受け取る（この時点では sendMessage は呼ばない）
   useEffect(() => {
-    setMarkdown(data ?? "");
+    if (data !== undefined) {
+      setMarkdown(data);
+    }
   }, [data]);
 
   // 値を更新して microCMS に送信する関数
   const updateValue = (value: string) => {
-  setMarkdown(value);
-  sendMessage({
-    id: "microcms",
-    type: "MICROCMS_POST_DATA",
-    message: value,
-  });
-};
+    setMarkdown(value);
+    sendMessage(value); // v1.1.0 ではこれだけでOK
+  };
 
   return (
     <div data-color-mode="light" className={styles.container}>
