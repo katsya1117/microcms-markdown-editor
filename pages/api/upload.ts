@@ -35,6 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // getSignedUrl を使って署名付きURLを生成
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 60 });
+    console.log("DEBUG Key:", key);
 
     // 公開URLを組み立て
     const publicUrl = `${process.env.NEXT_PUBLIC_R2_BUCKET_URL}/${key}`;
