@@ -27,6 +27,12 @@ const IndexPage = () => {
     setMarkdown(data ?? "");
   }, [data]);
 
+  // 値を更新して microCMS に送信する関数
+  const updateValue = (value: string) => {
+    setMarkdown(value);
+    sendMessage({ data: value });
+  };
+
   return (
     <div data-color-mode="light" className={styles.container}>
       <MDEditor
@@ -63,9 +69,7 @@ const IndexPage = () => {
           ],
         }}
         onChange={(value) => {
-          const safeValue = value ?? "";
-          setMarkdown(safeValue);
-          sendMessage({ data: safeValue }); // microCMS に送信
+          updateValue(value ?? "");
         }}
         height={540}
         textareaProps={{ placeholder: "Please enter Markdown text" }}
@@ -83,10 +87,7 @@ const IndexPage = () => {
           );
 
           if (result) {
-            setMarkdown(result.newMarkdown);
-            sendMessage({ data: result.newMarkdown }); // microCMS に送信
-
-            // カーソル位置を反映
+            updateValue(result.newMarkdown);
             if (textarea) {
               textarea.selectionStart = result.newCursor;
               textarea.selectionEnd = result.newCursor;
